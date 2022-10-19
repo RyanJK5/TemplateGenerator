@@ -1,0 +1,16 @@
+package bullethell.enemies;
+
+public final class # extends Enemy {
+
+    @Override
+    protected void setValues() {
+        id = EnemyID.#;
+        name = "#";
+        // TODO : set other values
+    }
+
+    @Override
+    protected void createLootTable() {
+        // TODO : implement loot table
+    }
+}

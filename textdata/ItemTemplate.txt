@@ -1,0 +1,13 @@
+package bullethell.items;
+
+public final class # extends Item {
+
+    @Override
+    protected void setValues() {
+        id = ItemID.#;
+        name = "#";
+        canStack = true;
+        // TODO : set other values
+    }
+    
+}

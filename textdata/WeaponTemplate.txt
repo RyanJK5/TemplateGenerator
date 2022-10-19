@@ -1,0 +1,35 @@
+package bullethell.items.weapons;
+
+import bullethell.items.ItemID;
+import bullethell.items.Recipe;
+import bullethell.combat.EnchantmentPool;
+import bullethell.combat.tags.StatusEffectType;
+
+public final class # extends Weapon {
+
+    @Override
+    protected void setValues() {
+        id = ItemID.#;
+        name = "#";
+
+        // TODO : set other values
+    }
+
+    @Override
+    protected void setEnchantmentParams() {
+        // TODO : complete setEnchantmentParams
+        enchantPool = EnchantmentPool.#;
+        allowedEffects = new StatusEffectType[] { };
+    }
+
+    @Override
+    public void addRecipes() {
+        // TODO : complete addRecipes
+        new Recipe(new ItemID[] {ItemID.#}, id, new int[] {#}, 1);
+    }
+
+    @Override
+    public void onUse() {
+        // TODO : complete onUse
+    }
+}

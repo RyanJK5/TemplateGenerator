@@ -14,10 +14,13 @@ static class TemplateGenerator {
     }
 
     static void Main() {
-        Console.WriteLine("0: Create Enemy");
-        Console.WriteLine("1: Create Item");
-        Console.WriteLine("2: Create Weapon");
-        WriteFile((IDType) PromptInt("", 2), PromptString("Enter name: "));
+        if (char.ToUpper(PromptString("Use advanced mode? (Y/N): ", 
+            str => str.Length > 0 && (char.ToUpper(str[0]) == 'Y' || char.ToUpper(str[0]) == 'N'), true)[0]) == 'Y') {
+                WriteAdvancedFile((IDType) PromptInt("0: Create Enemy\n1: Create Item\n2: Create Weapon\n", 2), PromptString("Enter name: "));
+                return;
+        } else {
+            WriteFile((IDType) PromptInt("0: Create Enemy\n1: Create Item\n2: Create Weapon\n", 2), PromptString("Enter name: "));
+        }
     }
 
     static string CreateEnumName(string className) {
@@ -46,23 +49,27 @@ static class TemplateGenerator {
         return result;
     }
 
-    static void WriteFile(IDType type, string className) {
-        string templateName;
-        string fileLocation;
+    static void WriteAdvancedFile(IDType type, string className) {
         switch (type) {
-            case IDType.Enemy:
-                templateName = "EnemyTemplate";
-                fileLocation = EnemyPath;
-                break;
             case IDType.Weapon:
-                templateName = "WeaponTemplate";
-                fileLocation = WeaponPath;
-                break;
-            default:
-                templateName = "ItemTemplate";
-                fileLocation = ItemPath;
+                string[] lines = ReadEnumMembers("D:/repositories/bullethell/src/bullethell/combat/EnchantmentPool.java");
+                for (int i = 0; i < lines.Length; i++) {
+                    Console.WriteLine($"{i}: {lines[i]}");
+                }
+                WriteAdvancedWeapon(className, PromptString("Enter enchantment pool type: "));
                 break;
         }
+    }
+
+    static void WriteAdvancedWeapon(string className, params string[] miscEntries) {
+        string templateName = GetFilePathsFrom(IDType.Weapon).templateName;
+        string fileLocation = GetFilePathsFrom(IDType.Weapon).fileLocation;
+        
+    }
+
+    static void WriteFile(IDType type, string className) {
+        string templateName = GetFilePathsFrom(type).templateName;
+        string fileLocation = GetFilePathsFrom(type).fileLocation;
         string[] lines = System.IO.File.ReadAllLines("textdata/" + templateName + ".txt");
         System.IO.File.WriteAllText(fileLocation + "/" + className + ".java", "");
         using (StreamWriter writer = new(fileLocation + "/" + className + ".java", true)) {
@@ -91,6 +98,35 @@ static class TemplateGenerator {
         UpdateEnum(type, className);
     }
 
+    static string[] ReadEnumMembers(string filePath) {
+        string[] lines = System.IO.File.ReadAllLines(filePath);
+        List<string> result = new();
+        char[] chars = {'(', ','};
+        for (int i = Array.FindIndex(lines, str => str.Contains("enum")) + 1; i < lines.Length; i++) {
+            foreach (char c in chars) {
+                if (lines[i].Contains(c)) {
+                    int startIndex = Array.FindIndex(lines[i].ToCharArray(), c => char.IsLetter(c));
+                    result.Add(lines[i].Substring(startIndex, lines[i].IndexOf(c) - startIndex));
+                    if (lines[i].Contains(';')) {
+                        return result.ToArray();
+                    }
+                    break;
+                }
+            }
+        }
+        return result.ToArray();
+    }
+
+    static (string templateName, string fileLocation) GetFilePathsFrom(IDType type) {
+        switch (type) {
+            case IDType.Enemy:
+                return ("EnemyTemplate", EnemyPath);
+            case IDType.Weapon:
+                return ("WeaponTemplate", WeaponPath);
+            default:
+                return ("ItemTemplate", ItemPath);
+        }
+    }
     static void UpdateEnum(IDType type, string className) {
         string filePath;
         switch (type) {
@@ -120,28 +156,29 @@ static class TemplateGenerator {
         }
     }
 
-    static int PromptInt(string prompt, int maxNum) {
+    static int PromptInt(string prompt, int maxNum) => int.Parse(PromptString(prompt, str => {
         int result;
-        while (true) {
-            Console.Write(prompt);
-            if (int.TryParse(Console.ReadLine(), out result) && result <= maxNum && result >= 0) {
-                return result;
-            }
-        }
-    }
+        return int.TryParse(str, out result) && result <= maxNum && result >= 0;
+    }, false));
 
-    static string PromptString(string prompt) {
+    static string PromptString(string prompt, Predicate<string> predicate, bool repeatPrompt) {
         string? result;
+        bool first = true;
         while (true) {
-            Console.Write(prompt);
+            if (repeatPrompt || first) {
+                Console.Write(prompt);
+            }
+            first = false;
             result = Console.ReadLine();
-            if (result != null && ValidString(result)) {
+            if (result != null && predicate.Invoke(result)) {
                 return result;
             }
         }
     }
 
-    static bool ValidString(string str) {
-        return str.Length > 0 && char.IsLetter(str[0]) && str.All(c => char.IsLetterOrDigit(c));
-    }
+    static string PromptString(string prompt, bool repeatPrompt) => PromptString(prompt, 
+        str => str.Length > 0 && char.IsLetter(str[0]) && str.All(c => char.IsLetterOrDigit(c)), repeatPrompt);
+
+    static string PromptString(string prompt) => PromptString(prompt, true);
+
 }

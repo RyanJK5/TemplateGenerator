@@ -18,14 +18,14 @@ public final class # extends Weapon {
     @Override
     protected void setEnchantmentParams() {
         // TODO : complete setEnchantmentParams
-        enchantPool = EnchantmentPool.#;
-        allowedEffects = new StatusEffectType[] { };
+        enchantPool = EnchantmentPool.$;
+        allowedEffects = new StatusEffectType[] { $ };
     }
 
     @Override
     public void addRecipes() {
         // TODO : complete addRecipes
-        new Recipe(new ItemID[] {ItemID.#}, id, new int[] {#}, 1);
+        new Recipe(new ItemID[] {ItemID.$}, id, new int[] {$}, 1);
     }
 
     @Override

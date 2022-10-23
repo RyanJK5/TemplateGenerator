@@ -52,30 +52,20 @@ static class TemplateGenerator {
     static void AdvancedFilePrompts(IDType type, string className) {
         switch (type) {
             case IDType.Weapon:
-
-                string[] enchLines = ReadEnumMembers("D:/repositories/bullethell/src/bullethell/combat/EnchantmentPool.java");
-                for (int i = 0; i < enchLines.Length; i++) {
-                    Console.WriteLine($"{i}: {enchLines[i]}");
-                }
-                string prompt1 = enchLines[PromptInt("Enter enchantment pool type: ", enchLines.Length - 1)];
-
-                string[] statusLines = ReadEnumMembers("D:/repositories/bullethell/src/bullethell/combat/StatusEffectType.java");
-                for (int i = 0; i < enchLines.Length; i++) {
-                    Console.WriteLine($"{i}: {statusLines[i]}");
-                }
-
-                List<string> statusEntries = new();
-                while (true) {
-                    string str = PromptString("Enter allowed status effects (\\ to break)", 
-                        str => (int.TryParse(str, out int result) && result < statusLines.Length && result >= 0) || str[0] == '\\', 
-                        true);
-                    if (str[0] == '\\') {
-                        break;
-                    }
-                    statusEntries.Add(str);
-                }
-
-                WriteFile((IDType) type, className, new string[] {prompt1}, statusEntries.ToArray());
+                Predicate<string> checkForValidArg = str => str.Length > 0 && (int.TryParse(str, out int result) || str[0] == '\\');
+                Console.WriteLine("Enter \\ to omit any value");
+                WriteFile(type, className,
+                    new string[] { PromptString("Enter description: ", str => str.Length > 0, true) },
+                    new string[] { PromptString("Enter crit multiplier: ", str => 
+                        str.Length > 0 && (float.TryParse(str, out float result) || str[0] == '\\'), true) },
+                    new string[] { PromptString("Enter damage: ", checkForValidArg, true) },
+                    new string[] { PromptString("Enter mana cost: ", checkForValidArg, true) },
+                    new string[] { PromptString("Enter fire time: ", checkForValidArg, true) },
+                    new string[] { PromptString("Enter range: ", checkForValidArg, true) },
+                    PromptFromEnum("D:/repositories/bullethell/src/bullethell/combat/EnchantmentPool.java", "Enter enchantment pool type: ", false),
+                    PromptFromEnum("D:/repositories/bullethell/src/bullethell/combat/tags/StatusEffectType.java", 
+                        "Enter allowed status effects (\\ to break)", true)
+                );
                 break;
         }
     }
@@ -85,17 +75,25 @@ static class TemplateGenerator {
         using (StreamWriter writer = new(GetFilePathsFrom(type).fileLocation + "/" + className + ".java")) {
             int hashNum = 0;
             int advIndex = 0;
+            bool advMode = advEntries.Length > 0;
             foreach (string line in lines) {
-                if (line.Contains('$') && advIndex < advEntries.Length) {
+                if (advMode && line.Contains('$') && advIndex < advEntries.Length) {
+                    if (advEntries[advIndex][0][0] == '\\') {
+                        advIndex++;
+                        continue;
+                    }
                     if (line.Contains('|')) {
                         writer.Write(line.Substring(0, line.IndexOf('|')));
-                        string pipedSection = line.Substring(line.IndexOf('|'), line.LastIndexOf('|'));
+                        string pipedSection = line.Substring(line.IndexOf('|'), line.LastIndexOf('|') - line.IndexOf('|'));
                         foreach (string entry in advEntries[advIndex]) {
-                            writer.Write(pipedSection.Substring(0, pipedSection.IndexOf('$')) + entry + pipedSection.IndexOf('$') + 1);
+                            writer.Write(pipedSection.Substring(1, pipedSection.IndexOf('$') - 1) + entry + 
+                                pipedSection.Substring(pipedSection.IndexOf('$') + 1, pipedSection.Length - 1 - pipedSection.IndexOf('$')));
                         }
-                        writer.WriteLine(line.Substring(line.LastIndexOf('|')));
+                        writer.WriteLine(line.Substring(line.LastIndexOf('|') + 1));
+                        advIndex++;
+                        continue;
                     }
-                    writer.Write(line.Substring(0, line.IndexOf('$')) + advEntries[advIndex] + line.Substring(line.IndexOf('$') + 1));
+                    writer.WriteLine(line.Substring(0, line.IndexOf('$')) + advEntries[advIndex][0] + line.Substring(line.IndexOf('$') + 1));
                     advIndex++;
                     continue;
                 }
@@ -115,8 +113,32 @@ static class TemplateGenerator {
                         writer.Write(CreateStringName(className));
                         break;
                 }
+                hashNum++;
+                writer.WriteLine(line.Substring(line.IndexOf('#') + 1));
             }
         }
+        UpdateEnum(type, className);
+    }
+
+    static string[] PromptFromEnum(string filePath, string prompt, bool loop) {
+        string[] lines = ReadEnumMembers(filePath);
+        for (int i = 0; i < lines.Length; i++) {
+            Console.WriteLine($"{i}: {lines[i]}");
+        }
+        if (!loop) {
+            return new string[] { lines[PromptInt(prompt, lines.Length - 1)] };
+        }
+        List<string> entries = new();
+        while (true) {
+            string str = PromptString("Enter allowed status effects (\\ to break): ", 
+                s => s.Length > 0 && ((int.TryParse(s, out int result) && result < lines.Length && result >= 0) || s[0] == '\\'), 
+                true);
+            if (str[0] == '\\') {
+                break;
+            }
+            entries.Add(lines[int.Parse(str)]);
+        }
+        return entries.ToArray();
     }
 
     static string[] ReadEnumMembers(string filePath) {
@@ -179,6 +201,12 @@ static class TemplateGenerator {
 
     static int PromptInt(string prompt, int maxNum) => int.Parse(PromptString(prompt, str => 
         int.TryParse(str, out int result) && result <= maxNum && result >= 0, false));
+
+    static int PromptInt(string prompt, bool repeat) => int.Parse(PromptString(prompt, str =>
+        int.TryParse(str, out int result), repeat));
+
+    static float PromptFloat(string prompt, float maxNum) => float.Parse(PromptString(prompt, str =>
+        float.TryParse(str, out float result) && result <= maxNum && result >= 0, false));
 
     static string PromptString(string prompt, Predicate<string> predicate, bool repeatPrompt) {
         string? result;

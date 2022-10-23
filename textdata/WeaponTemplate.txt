@@ -1,5 +1,6 @@
 package bullethell.items.weapons;
 
+import bullethell.enemies.Enemy;
 import bullethell.items.ItemID;
 import bullethell.items.Recipe;
 import bullethell.combat.EnchantmentPool;
@@ -11,21 +12,30 @@ public final class # extends Weapon {
     protected void setValues() {
         id = ItemID.#;
         name = "#";
-
-        // TODO : set other values
+        description = "$";
+        critMultiplier = $f;
+        dmg = $;
+        manaCost = $;
+        fireTime = $;
+        range = $;
     }
 
     @Override
     protected void setEnchantmentParams() {
         // TODO : complete setEnchantmentParams
         enchantPool = EnchantmentPool.$;
-        allowedEffects = new StatusEffectType[] { $ };
+        allowedEffects = new StatusEffectType[] { |StatusEffectType.$, |};
     }
 
     @Override
     public void addRecipes() {
         // TODO : complete addRecipes
-        new Recipe(new ItemID[] {ItemID.$}, id, new int[] {$}, 1);
+    }
+
+    @Override
+    public boolean critCondition(Enemy enemy) {
+        // TODO : complete critCondition
+        return true;
     }
 
     @Override

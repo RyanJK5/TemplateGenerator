@@ -18,28 +18,27 @@ public final class # extends Weapon {
         manaCost = $;
         fireTime = $;
         range = $;
+        // TODO : set other values
     }
 
     @Override
     protected void setEnchantmentParams() {
-        // TODO : complete setEnchantmentParams
         enchantPool = EnchantmentPool.$;
         allowedEffects = new StatusEffectType[] { |StatusEffectType.$, |};
     }
 
     @Override
     public void addRecipes() {
-        // TODO : complete addRecipes
+
     }
 
     @Override
     public boolean critCondition(Enemy enemy) {
-        // TODO : complete critCondition
         return true;
     }
 
     @Override
     public void onUse() {
-        // TODO : complete onUse
+        
     }
 }

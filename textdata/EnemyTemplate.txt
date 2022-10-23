@@ -1,16 +1,21 @@
 package bullethell.enemies;
 
+import bullethell.items.ItemID;
+import bullethell.items.ItemLoot;
+
 public final class # extends Enemy {
 
     @Override
     protected void setValues() {
         id = EnemyID.#;
         name = "#";
-        // TODO : set other values
+        maxHP = $;
+        dmg = $;
+        speed = $;
     }
 
     @Override
     protected void createLootTable() {
-        // TODO : implement loot table
+        lootTable = new ItemLoot[] {|new ItemLoot(ItemID.$, $f, $, $), |};
     }
 }

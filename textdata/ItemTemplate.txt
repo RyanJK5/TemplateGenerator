@@ -7,7 +7,7 @@ public final class # extends Item {
         id = ItemID.#;
         name = "#";
         canStack = true;
-        // TODO : set other values
+        description = "$";
     }
     
 }

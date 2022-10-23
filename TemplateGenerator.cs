@@ -16,7 +16,7 @@ static class TemplateGenerator {
     static void Main() {
         if (char.ToUpper(PromptString("Use advanced mode? (Y/N): ", 
             str => str.Length > 0 && (char.ToUpper(str[0]) == 'Y' || char.ToUpper(str[0]) == 'N'), true)[0]) == 'Y') {
-                WriteAdvancedFile((IDType) PromptInt("0: Create Enemy\n1: Create Item\n2: Create Weapon\n", 2), PromptString("Enter name: "));
+                AdvancedFilePrompts((IDType) PromptInt("0: Create Enemy\n1: Create Item\n2: Create Weapon\n", 2), PromptString("Enter name: "));
                 return;
         } else {
             WriteFile((IDType) PromptInt("0: Create Enemy\n1: Create Item\n2: Create Weapon\n", 2), PromptString("Enter name: "));
@@ -49,32 +49,56 @@ static class TemplateGenerator {
         return result;
     }
 
-    static void WriteAdvancedFile(IDType type, string className) {
+    static void AdvancedFilePrompts(IDType type, string className) {
         switch (type) {
             case IDType.Weapon:
-                string[] lines = ReadEnumMembers("D:/repositories/bullethell/src/bullethell/combat/EnchantmentPool.java");
-                for (int i = 0; i < lines.Length; i++) {
-                    Console.WriteLine($"{i}: {lines[i]}");
+
+                string[] enchLines = ReadEnumMembers("D:/repositories/bullethell/src/bullethell/combat/EnchantmentPool.java");
+                for (int i = 0; i < enchLines.Length; i++) {
+                    Console.WriteLine($"{i}: {enchLines[i]}");
                 }
-                WriteAdvancedWeapon(className, PromptString("Enter enchantment pool type: "));
+                string prompt1 = enchLines[PromptInt("Enter enchantment pool type: ", enchLines.Length - 1)];
+
+                string[] statusLines = ReadEnumMembers("D:/repositories/bullethell/src/bullethell/combat/StatusEffectType.java");
+                for (int i = 0; i < enchLines.Length; i++) {
+                    Console.WriteLine($"{i}: {statusLines[i]}");
+                }
+
+                List<string> statusEntries = new();
+                while (true) {
+                    string str = PromptString("Enter allowed status effects (\\ to break)", 
+                        str => (int.TryParse(str, out int result) && result < statusLines.Length && result >= 0) || str[0] == '\\', 
+                        true);
+                    if (str[0] == '\\') {
+                        break;
+                    }
+                    statusEntries.Add(str);
+                }
+
+                WriteFile((IDType) type, className, new string[] {prompt1}, statusEntries.ToArray());
                 break;
         }
     }
 
-    static void WriteAdvancedWeapon(string className, params string[] miscEntries) {
-        string templateName = GetFilePathsFrom(IDType.Weapon).templateName;
-        string fileLocation = GetFilePathsFrom(IDType.Weapon).fileLocation;
-        
-    }
-
-    static void WriteFile(IDType type, string className) {
-        string templateName = GetFilePathsFrom(type).templateName;
-        string fileLocation = GetFilePathsFrom(type).fileLocation;
-        string[] lines = System.IO.File.ReadAllLines("textdata/" + templateName + ".txt");
-        System.IO.File.WriteAllText(fileLocation + "/" + className + ".java", "");
-        using (StreamWriter writer = new(fileLocation + "/" + className + ".java", true)) {
+    static void WriteFile(IDType type, string className, params string[][] advEntries) {
+        string[] lines = System.IO.File.ReadAllLines("textdata/" + GetFilePathsFrom(type).templateName + ".txt");
+        using (StreamWriter writer = new(GetFilePathsFrom(type).fileLocation + "/" + className + ".java")) {
             int hashNum = 0;
+            int advIndex = 0;
             foreach (string line in lines) {
+                if (line.Contains('$') && advIndex < advEntries.Length) {
+                    if (line.Contains('|')) {
+                        writer.Write(line.Substring(0, line.IndexOf('|')));
+                        string pipedSection = line.Substring(line.IndexOf('|'), line.LastIndexOf('|'));
+                        foreach (string entry in advEntries[advIndex]) {
+                            writer.Write(pipedSection.Substring(0, pipedSection.IndexOf('$')) + entry + pipedSection.IndexOf('$') + 1);
+                        }
+                        writer.WriteLine(line.Substring(line.LastIndexOf('|')));
+                    }
+                    writer.Write(line.Substring(0, line.IndexOf('$')) + advEntries[advIndex] + line.Substring(line.IndexOf('$') + 1));
+                    advIndex++;
+                    continue;
+                }
                 if (!line.Contains('#') || hashNum > 2) {
                     writer.WriteLine(line);
                     continue;
@@ -91,11 +115,8 @@ static class TemplateGenerator {
                         writer.Write(CreateStringName(className));
                         break;
                 }
-                writer.WriteLine(line.Substring(line.IndexOf('#') + 1));
-                hashNum++;
             }
         }
-        UpdateEnum(type, className);
     }
 
     static string[] ReadEnumMembers(string filePath) {
@@ -156,10 +177,8 @@ static class TemplateGenerator {
         }
     }
 
-    static int PromptInt(string prompt, int maxNum) => int.Parse(PromptString(prompt, str => {
-        int result;
-        return int.TryParse(str, out result) && result <= maxNum && result >= 0;
-    }, false));
+    static int PromptInt(string prompt, int maxNum) => int.Parse(PromptString(prompt, str => 
+        int.TryParse(str, out int result) && result <= maxNum && result >= 0, false));
 
     static string PromptString(string prompt, Predicate<string> predicate, bool repeatPrompt) {
         string? result;
